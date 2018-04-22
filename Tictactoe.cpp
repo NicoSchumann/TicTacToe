@@ -1,8 +1,10 @@
 #include "Tictactoe.hpp"
 #include <iostream> // for debugging
 
-// Overloading the std::ostream for printing some objects
-// on the console.
+
+/*-------- helping functions ----------*/
+
+/** Overloads the << operator, so that enum Mark objects could be printed */
 std::ostream& operator<<(std::ostream& o, Mark m)
 {
     switch (m)
@@ -18,7 +20,7 @@ std::ostream& operator<<(std::ostream& o, Mark m)
     }
     return o;
 }
-// This doesn't belong the Board class but overloads the std::ostream operator.
+/** Overloads the << operator, so that Board objects could be printed */
 std::ostream & operator<<(std::ostream& ostr, const Board& board)
 {
     ostr << '\n';
@@ -295,7 +297,7 @@ Game::getButtonNo(int x, int y) const
             return i;
         }
     }
-    return -1;
+    return -1; // if something goes wrong
 }
 Mark
 Game::getCurrPlayer() const
@@ -310,7 +312,6 @@ Game::toggleCurrPlayer()
 void
 Game::update()
 {
-    // not implemented
     if (m_done)
     {
         m_window->close();
