@@ -1,11 +1,10 @@
 #include "Tictactoe.hpp"
-#include <iostream> // for debugging
 
 
 /*-------- helping functions ----------*/
 
-/** Overloads the << operator, so that enum Mark objects could be printed */
-std::ostream& operator<<(std::ostream& o, Mark m)
+/** Overloads the << operator, so that enums could be printed to console. */
+std::ostream& operator<<(std::ostream& o, const Mark m)
 {
     switch (m)
     {
@@ -20,17 +19,35 @@ std::ostream& operator<<(std::ostream& o, Mark m)
     }
     return o;
 }
-/** Overloads the << operator, so that Board objects could be printed */
-std::ostream & operator<<(std::ostream& ostr, const Board& board)
+
+std::ostream & operator<<( std::ostream & o, const State s)
 {
-    ostr << '\n';
+    switch (s)
+    {
+        case State::cross:
+            o << "State::cross";
+            break;
+        case State::draw:
+            o << "State::draw";
+            break;
+        case State::inProgress:
+            o << "State::inProgress";
+            break;
+        case State::ring:
+            o << "State::ring";
+    }
+    return o;
+}
+
+std::ostream & operator<<(std::ostream & ostr, const Board& board)
+{
     for (int i = 0; i < 9; ++i)
     {
         Mark mark = board.getMark(i);
-        if (mark == Mark::cross) ostr << 'x';
-        else if (mark == Mark::ring) ostr << 'o';
-        else ostr << ' ';
-        if (i == 2 || i == 5 || i == 8) ostr << '\n';
+        if (mark == Mark::cross) { ostr << 'x'; }
+        else if (mark == Mark::ring) { ostr << 'o'; }
+        else { ostr << '-'; }
+        if (i == 2 || i == 5 || i == 8) { ostr << '\n'; }
     }
     return ostr;
 }
@@ -40,8 +57,11 @@ Board::Board()
 {
     reset();
 }
-Board::~Board()
-{}
+Board::Board(const Board & b)
+{
+    m_fields = b.m_fields;
+}
+
 void
 Board::reset()
 {
@@ -53,7 +73,7 @@ Board::setMark(Mark mark, std::size_t position)
     m_fields[position] = mark;
 }
 Mark
-Board::getMark(int position) const
+Board::getMark(const int position) const
 {
     return m_fields[position];
 }
@@ -76,7 +96,7 @@ Board::evaluate() const
      || (f[2] == Mark::cross && f[2] == f[4] && f[4] == f[6])
     )
     {
-        std::cerr << " winner:cross ";  // debug
+        //std::cerr << "Cross wins.\n";  // debug
         return State::cross;
     }
     else if ( // Check for a win of player ring.
@@ -93,7 +113,7 @@ Board::evaluate() const
      || (f[2] == Mark::ring && f[2] == f[4] && f[4] == f[6])
     )
     {
-        std::cerr << " winner:ring "; // debug
+        //std::cerr << "Ring wins.\n"; // debug
         return State::ring;
     }
 
@@ -103,13 +123,13 @@ Board::evaluate() const
     {
         if (field == Mark::empty)
         {
-            std::cerr << " winner:inProgess ";  // debug
+            // std::cerr << "Game is in progess.\n";  // debug
             return State::inProgress;
         }
     }
 
-    // No winner, not in progress, so it must be a draw.
-    std::cerr << " winner:draw ";  // debug
+    // No winner, not in progress, so it st be a draw.
+    //std::cerr << "Game ends with a draw.\n";  // debug
     return State::draw;
 }
 
@@ -201,7 +221,7 @@ Canvas::render()
 }
 
 void
-Canvas::update(Board & board)
+Canvas::update(const Board & board)
 {
     for (int i = 0; i < 9; ++i)
     {
@@ -218,7 +238,6 @@ Canvas::update(Board & board)
             m_sprite[i].setTextureRect(sf::Rect<int>(64,0,32,32));
         }
     }
-    //std::cerr << " canvasupdate "; // debug
 }
 
 /*--------- class Game -------*/
@@ -229,8 +248,8 @@ Game::Game(sf::RenderWindow * window)
 , m_state(State::inProgress)
 , m_currButtonNo(-1)
 , m_done(false)
-, m_kiPlayer(Mark::empty)
-, m_ki(nullptr)
+, m_aiPlayer(Mark::ring)
+, m_ai(new RandomAi(m_aiPlayer))
 {
     resize();
 }
@@ -240,12 +259,22 @@ Game::Game()
 Game::~Game()
 {
     delete m_window;
-    if (m_ki != nullptr) { delete m_ki; }
+    if (m_ai != nullptr) { delete m_ai; }
 }
 
 void
 Game::handleInput()
 {
+    // checks if AI is at draw and set AI's suggestion
+    if (m_state == State::inProgress
+            && m_currPlayer == m_aiPlayer
+            && m_ai != nullptr
+    )
+    {
+        m_currButtonNo = m_ai->getSuggestedField(m_board, m_currPlayer);
+        return;
+    }
+
     sf::Event event;
     m_window->waitEvent(event);
     {
@@ -258,10 +287,9 @@ Game::handleInput()
             resize();
             // m_canvas.resize();
         }
-        else if (m_currPlayer == m_kiPlayer && m_ki != nullptr){
-            m_currButtonNo = m_ki->getButtonNo();
-        }
-        else if (event.type == sf::Event::MouseButtonPressed)
+        else if (m_state == State::inProgress
+                && event.type == sf::Event::MouseButtonPressed
+        )
         {
             if (event.mouseButton.button == sf::Mouse::Left)
             {
@@ -288,7 +316,7 @@ Game::resize()
     m_button[8] = sf::Rect<int>(2*bWidth, 2*bHeight, bWidth, bHeight);
 }
 int
-Game::getButtonNo(int x, int y) const
+Game::getButtonNo(const int x, const int y) const
 {
     for(std::size_t i = 0; i < m_button.size(); ++i)
     {
@@ -326,30 +354,27 @@ Game::update()
     {
         return;
     }
-    if (m_board.getMark(m_currButtonNo) == Mark::empty)
+    if (m_board.getMark(m_currButtonNo) != Mark::empty)
     {
-        if (m_currPlayer == Mark::cross)
-        {
-            m_board.setMark(Mark::cross, m_currButtonNo);
-            // debug
-            //std::cerr << "m_currButtonNo:" << m_currButtonNo
-            //        << " boardsMark:" << m_board.getMark(m_currButtonNo)
-            //        << '\n';
-        }
-        else if (m_currPlayer == Mark::ring)
-        {
-            m_board.setMark(Mark::ring, m_currButtonNo);
-            // debug
-            //std::cerr << "m_currButtonNo:" << m_currButtonNo
-            //        << " boardsMark:" << m_board.getMark(m_currButtonNo)
-            //        << '\n';
-        }
-        toggleCurrPlayer();
+        std::cerr << "Game::update: board(m_currButtonNo is not empty!\n";
+        return;
     }
-    // std::cerr << " m_currButtonNo:" << m_currButtonNo << '\n';  // debug
+
+
+    if (m_currPlayer == Mark::cross)
+    {
+        m_board.setMark(Mark::cross, m_currButtonNo);
+    }
+    else if (m_currPlayer == Mark::ring)
+    {
+        m_board.setMark(Mark::ring, m_currButtonNo);
+    }
+
+    toggleCurrPlayer();
+
     m_currButtonNo = -1;
     m_canvas.update(m_board);
-    std::cerr << m_board; // debug
+    std::cerr << m_board << '\n'; // debug
     m_state = m_board.evaluate();
 
 }
@@ -372,10 +397,175 @@ Game::intro()
     // not yet implemented
 }
 
-/*------------- class Ki --------------*/
-int
-Ki::getButtonNo()
+/*------------- class Ai --------------*/
+Ai::Ai(Mark aiPlayer)
+: m_aiPlayer(aiPlayer)
+, m_pointsAtLost(-1)
+, m_pointsAtWin(1)
+, m_pointsAtDraw(0)
+{}
+
+Ai::Ai()
+: Ai(Mark::empty)
+{}
+
+RandomAi::RandomAi(const Mark aiPlayer)
+: Ai::Ai(aiPlayer)
+, m_randomRounds(100)
 {
-    // not yet implemented
+    std::srand(std::time(0));
 }
 
+RandomAi::RandomAi()
+: RandomAi(Mark::empty)
+{}
+
+void
+RandomAi::playRandomField(Board & board, Mark currPlayer)
+{
+    int emptyFields = 0;
+
+    // evaluate number of empty fields of the board
+    for (int i = 0; i < 9; ++i)
+    {
+        if (board.getMark(i) == Mark::empty)
+        {
+            ++ emptyFields;
+        }
+    }
+    int r = rand() % emptyFields;
+    // std::cerr << "rand_val:" << r; // debug
+
+    // play the Field
+    for (int i = 0; i < 9; ++i )
+    {
+        if (board.getMark(i) != Mark::empty)
+        {
+            continue;
+        }
+        if (r == 0)
+        {
+            // std::cerr << " r:" << r; // debug
+            board.setMark(currPlayer, i);
+            break;
+        }
+        --r;
+    }
+}
+int
+RandomAi::getSuggestedField(const Board & board, const Mark currPlayer)
+{
+    // if the game is in finite state
+    if (board.evaluate() != State::inProgress)
+    {
+        return -1;
+    }
+
+    // std::cerr << "getSuggestedField_1\n"; // debug
+
+    std::array<int, 9> fieldVals; // holds the value of each field
+
+    // Sets the value of non-empty fields lower than the the minimal
+    // reachable points, to ensure that non-empty fields would not selected
+    // at a board state where all A.I. player moves are resulting to a lost.
+    // The empty fields will be initialized with 0.
+    // Variable 'm_pointsAtLost' must be negative.
+    for (int i = 0; i < 9; ++i)
+    {
+        if (board.getMark(i) == Mark::empty)
+        {
+            fieldVals[i] = 0;
+        }
+        else
+        {
+            // m_randomRounds must be negative
+            fieldVals[i] = (m_randomRounds * m_pointsAtLost) - 1;
+        }
+    }
+
+    // play with each empty field:
+    for (int i = 0; i < 9; ++i)
+    {
+        // rejects all fields which are not empty
+        if (board.getMark(i) != Mark::empty)
+        {
+            continue;
+        }
+
+        Board * bo = new Board(board);
+        bo->setMark(currPlayer, i);
+
+        // If playing that field results into
+        // a finished board, then this could only be
+        // resulted to a win for currPlayer or a draw.
+        // Hence 'i' is suggested and should returned.
+        if (bo->evaluate() != State::inProgress)
+        {
+            return i;
+        }
+
+        //std::cerr << "getSuggestedField_5\n"; // debug
+
+        // play some randomly games for each free field:
+        for (int k = 0; k < m_randomRounds; ++k)
+        {
+            // toggle player
+            Mark cp = (currPlayer == Mark::cross ? Mark::ring : Mark::cross);
+            // clone the board
+            Board * b = new Board(*bo);
+
+            State state = State::inProgress;
+            // play a board to its end randomly
+
+            //std::cerr << "getSuggestedField_7\n"; // debug
+
+            do {
+                playRandomField( *b, cp);
+                cp = (cp == Mark::cross ? Mark::ring : Mark::cross);
+                state = b->evaluate();
+            } while (state == State::inProgress);
+
+            //std::cerr << "getSuggestedField_9 state:" << state << '\n'; // debug
+
+            delete b; // here not longer needed
+
+            // evaluate the state of the randomly played board:
+            if (state == State::draw)
+            {
+                fieldVals[i] += m_pointsAtDraw;
+            }
+            else if ((state == State::cross && currPlayer == Mark::cross)
+                    ||(state == State::ring && currPlayer == Mark::ring))
+            {
+                fieldVals[i] += m_pointsAtWin;
+            }
+            else  // game resulted in a lost for currPlayer
+            {
+                fieldVals[i] += m_pointsAtLost;
+            }
+        }
+        // delete the board of the i-th played field
+        delete bo;
+    }
+
+    //std::cerr << "get_suggestedField_10\n"; // debug
+
+    // evaluate the earned points
+    int suggestedField = -1;
+    int maxFieldVal = m_randomRounds * m_pointsAtLost -1;
+    for (int i = 0; i < 9; ++i)
+    {
+        if (fieldVals[i] > maxFieldVal)
+        {
+            maxFieldVal = fieldVals[i];
+            suggestedField = i;
+        }
+    }
+    // debug
+    for (int i = 0; i < fieldVals.size(); ++i)
+    {
+        std::cerr << "fieldVals["<<i<<"]:"<<fieldVals[i]<<"\n";
+    }
+
+    return suggestedField;
+}
