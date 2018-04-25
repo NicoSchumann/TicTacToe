@@ -24,6 +24,7 @@ run 'make' at the base directory.
 
 
 deutsch:
+==
 
 Ein einfaches TicTacToe-Spiel mit KI-Spieler mit Hilfe des SFML-Frameworks.
 
