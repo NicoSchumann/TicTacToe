@@ -7,13 +7,13 @@ and on the other hand I implement an A.I. by evaluating
 a bunch of randomly played games.
 
 At a first step I coded the GUI.
+Now both A.I are finished.
 
 How to compile:
 run 'make' at the base directory.
 
 
 deutsch:
-=========
 Ein einfaches TicTacToe-Spiel mit KI-Spieler mit Hilfe des SFML-Frameworks.
 
 Bei diesem Spiel will ich zwe verschiedene KI-implementierungen testen.
@@ -21,6 +21,7 @@ Zum einen eine Implementierung des Minimax-Algorithmus, und
 zum Anderen durch Auswertung von Zufällig zu Ende gespielten Runden.
 
 Als erstes habe ich die grafische Benutzerschnittstelle programmiert.
+Jetzt sind auch die beiden KI fertig programmiert.
 
 Kompilieren:
 Einfach 'make' im obersten Verzeichnis des Repositorys aufrufen.
