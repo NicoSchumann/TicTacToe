@@ -1,4 +1,6 @@
 #include "Tictactoe.hpp"
+#include <climits>
+#include <algorithm>
 
 
 /*-------- helping functions ----------*/
@@ -145,7 +147,7 @@ Canvas::Canvas(sf::RenderWindow * window)
     }
     for (auto & sprite : m_sprite)
     {
-        sprite = sf::Sprite(m_texture, sf::Rect<int>(64,0,32,32)); // should later be (64,0,32,32)
+        sprite = sf::Sprite(m_texture, sf::Rect<int>(64,0,32,32));
         sprite.setOrigin(16,16);
     }
     resize();
@@ -240,7 +242,9 @@ Canvas::update(const Board & board)
     }
 }
 
+
 /*--------- class Game -------*/
+
 Game::Game(sf::RenderWindow * window)
 : m_window(window)
 , m_canvas(window)
@@ -249,7 +253,7 @@ Game::Game(sf::RenderWindow * window)
 , m_currButtonNo(-1)
 , m_done(false)
 , m_aiPlayer(Mark::ring)
-, m_ai(new RandomAi(m_aiPlayer))
+, m_ai(new MinimaxAi(m_aiPlayer))
 {
     resize();
 }
@@ -287,12 +291,16 @@ Game::handleInput()
             resize();
             // m_canvas.resize();
         }
-        else if (m_state == State::inProgress
-                && event.type == sf::Event::MouseButtonPressed
-        )
+        else if (event.type == sf::Event::MouseButtonPressed)
         {
-            if (event.mouseButton.button == sf::Mouse::Left)
+            if (event.mouseButton.button == sf::Mouse::Right)
             {
+                reset();
+                std::cerr << "hello"; // debug
+            }
+            else if (m_state == State::inProgress
+               && event.mouseButton.button == sf::Mouse::Left
+            ) {
                 m_currButtonNo = getButtonNo(event.mouseButton.x, event.mouseButton.y);
             }
         }
@@ -383,6 +391,15 @@ Game::isDone() const
 {
     return m_done;
 }
+
+void
+Game::reset()
+{
+    m_board.reset();
+    m_canvas.update(m_board);
+    render();
+}
+
 void
 Game::render()
 {
@@ -397,7 +414,34 @@ Game::intro()
     // not yet implemented
 }
 
+void
+Game::setRandomAI()
+{
+    if (m_ai != nullptr) delete m_ai;
+    m_ai = new RandomAi;
+}
+void
+Game::setMinimaxAI()
+{
+    if (m_ai != nullptr) delete m_ai;
+    m_ai = new MinimaxAi;
+}
+void
+Game::setNoAI()
+{
+    if (m_ai != nullptr) delete m_ai;
+    m_ai = nullptr;
+    m_aiPlayer = Mark::empty;
+}
+void
+Game::setAIPlayer(const Mark aiPlayer)
+{
+    m_aiPlayer = aiPlayer;
+}
+
+
 /*------------- class Ai --------------*/
+
 Ai::Ai(Mark aiPlayer)
 : m_aiPlayer(aiPlayer)
 , m_pointsAtLost(-1)
@@ -409,6 +453,9 @@ Ai::Ai()
 : Ai(Mark::empty)
 {}
 
+
+/*----- class RandomAi -----*/
+
 RandomAi::RandomAi(const Mark aiPlayer)
 : Ai::Ai(aiPlayer)
 , m_randomRounds(100)
@@ -419,6 +466,7 @@ RandomAi::RandomAi(const Mark aiPlayer)
 RandomAi::RandomAi()
 : RandomAi(Mark::empty)
 {}
+
 
 void
 RandomAi::playRandomField(Board & board, Mark currPlayer)
@@ -434,7 +482,6 @@ RandomAi::playRandomField(Board & board, Mark currPlayer)
         }
     }
     int r = rand() % emptyFields;
-    // std::cerr << "rand_val:" << r; // debug
 
     // play the Field
     for (int i = 0; i < 9; ++i )
@@ -445,7 +492,6 @@ RandomAi::playRandomField(Board & board, Mark currPlayer)
         }
         if (r == 0)
         {
-            // std::cerr << " r:" << r; // debug
             board.setMark(currPlayer, i);
             break;
         }
@@ -460,8 +506,6 @@ RandomAi::getSuggestedField(const Board & board, const Mark currPlayer)
     {
         return -1;
     }
-
-    // std::cerr << "getSuggestedField_1\n"; // debug
 
     std::array<int, 9> fieldVals; // holds the value of each field
 
@@ -504,8 +548,6 @@ RandomAi::getSuggestedField(const Board & board, const Mark currPlayer)
             return i;
         }
 
-        //std::cerr << "getSuggestedField_5\n"; // debug
-
         // play some randomly games for each free field:
         for (int k = 0; k < m_randomRounds; ++k)
         {
@@ -515,17 +557,13 @@ RandomAi::getSuggestedField(const Board & board, const Mark currPlayer)
             Board * b = new Board(*bo);
 
             State state = State::inProgress;
+
             // play a board to its end randomly
-
-            //std::cerr << "getSuggestedField_7\n"; // debug
-
             do {
                 playRandomField( *b, cp);
                 cp = (cp == Mark::cross ? Mark::ring : Mark::cross);
                 state = b->evaluate();
             } while (state == State::inProgress);
-
-            //std::cerr << "getSuggestedField_9 state:" << state << '\n'; // debug
 
             delete b; // here not longer needed
 
@@ -548,8 +586,6 @@ RandomAi::getSuggestedField(const Board & board, const Mark currPlayer)
         delete bo;
     }
 
-    //std::cerr << "get_suggestedField_10\n"; // debug
-
     // evaluate the earned points
     int suggestedField = -1;
     int maxFieldVal = m_randomRounds * m_pointsAtLost -1;
@@ -568,4 +604,113 @@ RandomAi::getSuggestedField(const Board & board, const Mark currPlayer)
     }
 
     return suggestedField;
+}
+
+
+/*------- class MinimaxAi --------*/
+
+MinimaxAi::MinimaxAi(const Mark aiPlayer)
+: Ai::Ai(aiPlayer)
+{}
+MinimaxAi::MinimaxAi()
+: MinimaxAi(Mark::empty)
+{}
+
+int
+MinimaxAi::getSuggestedField(const Board & board, const Mark currPlayer)
+{
+    // if game is already finished
+    if (board.evaluate() != State::inProgress)
+    {
+        return -1;
+    }
+
+    int fieldNo = -1;
+    int fieldVal;
+
+    if(currPlayer == Mark::cross)
+    {
+        fieldVal = INT_MIN;
+    }
+    else if (currPlayer == Mark::ring)
+    {
+        fieldVal = INT_MAX;
+    }
+    // The opponent player will be used to invoke minimax
+    Mark changedPlayer = (currPlayer == Mark::cross ? Mark::ring : Mark::cross);
+
+    // Plays the empty fields and invokes minimax() for each.
+    for (int i = 0; i < 9; ++i)
+    {
+        if (board.getMark(i) != Mark::empty)
+        {
+            continue;
+        }
+        Board * b = new Board(board);
+        b->setMark(currPlayer, i);
+        int val = minimax(*b, changedPlayer );
+        delete b;
+
+        // Evaluates the the suggested field of the board.
+        if (currPlayer == Mark::cross && val > fieldVal)
+        {
+            fieldVal = val;
+            fieldNo = i;
+        }
+        else if (currPlayer == Mark::ring && val < fieldVal)
+        {
+            fieldVal = val;
+            fieldNo = i;
+        }
+    }
+    return fieldNo;
+}
+
+int
+MinimaxAi::minimax(const Board & board, const Mark currPlayer)
+{
+    // Player 'cross' maximizes, player 'ring' minimizes.
+    // m_pointsAtWin should be positive,
+    // m_pointsAtLost should be negative.
+
+    State state = board.evaluate();
+
+    if (state == State::cross) return m_pointsAtWin;
+    if (state == State::ring)  return m_pointsAtLost;
+    if (state == State::draw)  return m_pointsAtDraw;
+
+    int bestVal;
+    if (currPlayer == Mark::cross)      bestVal = INT_MIN;
+    else if (currPlayer == Mark::ring)  bestVal = INT_MAX;
+
+    // Toggles player for invoking the minimax() with the opponent:
+    Mark changedPlayer = (currPlayer == Mark::cross ? Mark::ring : Mark::cross);
+
+    // Plays the empty fields and invoke the minimax for each.
+    for (int i = 0; i < 9; ++i)
+    {
+        if (board.getMark(i) != Mark::empty)
+        {
+            continue;
+        }
+
+        Board * b = new Board(board);
+        b->setMark(currPlayer,i);
+
+        int val = minimax(*b,changedPlayer);
+
+        delete b;
+
+        // Mark::cross maximizes
+        if (currPlayer == Mark::cross && val > bestVal)
+        {
+            bestVal = std::max(val,bestVal);
+        }
+        // Mark::ring minimizes
+        else if (currPlayer == Mark::ring && val < bestVal)
+        {
+            bestVal = std::min(val,bestVal);
+        }
+    }
+    return bestVal;
 }

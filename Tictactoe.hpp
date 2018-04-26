@@ -86,8 +86,8 @@ public:
 
 protected:
     Mark m_aiPlayer;
-    int m_pointsAtLost;
-    int m_pointsAtWin;
+    int m_pointsAtLost; // should be negative
+    int m_pointsAtWin;  // should be positive
     int m_pointsAtDraw;
 };
 
@@ -98,7 +98,7 @@ public:
     RandomAi(const Mark aiPlayer);
 
     /* Returns the best field for currPlayer by randomly detection */
-    virtual int getSuggestedField(const Board &, const Mark currPlayer);
+    int getSuggestedField(const Board &, const Mark currPlayer);
 
     int getRandomRounds() const { return m_randomRounds; }
     void setRandomRounds(const int r) { m_randomRounds = r; }
@@ -108,20 +108,19 @@ private:
     void playRandomField(Board &, Mark currPlayer);
 
     int m_randomRounds;
-
-
 };
 
-/* not yet implemented
 class MinimaxAi : public Ai
 {
 public:
     MinimaxAi();
     MinimaxAi(const Mark aiPlayer);
-    ~MinimaxAi();
 
-    int getSuggestedField(const Board&, const Mark& currPlayer);
-*/
+    int getSuggestedField(const Board &, const Mark currPlayer);
+
+private:
+    int minimax(const Board &, const Mark currPlayer);
+};
 
 class Game
 {
@@ -145,6 +144,9 @@ public:
     /** Checks if the game is finish. */
     bool isDone() const;
 
+    /** Resets the game */
+    void reset();
+
     /**
      * Checks for intersection of mouse click position with
      * a TicTacToe draw field.
@@ -159,6 +161,14 @@ public:
 
     /** Toggles the current player. */
     void toggleCurrPlayer();
+
+    /** Sets one player to this */
+    void setRandomAI();
+    void setMinimaxAI();
+    void setNoAI();
+
+    /** Here you could set one player at A.I. */
+    void setAIPlayer(const Mark aiPlayer);
 
 private:
 
