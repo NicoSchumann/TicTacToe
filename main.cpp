@@ -1,10 +1,19 @@
 #include <SFML/Graphics.hpp>
 #include "Tictactoe.hpp"
 
+//
+//  Reset the board with right mouse click!
+//
+
 int main()
 {
     Game game;
-    game.intro();
+
+    game.setMinimaxAI();  // chose your A.I.
+    //game.setRandomAI();
+    // game.setNoAI()
+
+    game.intro(); // not yet implemented
     while(!game.isDone())
     {
         game.render();

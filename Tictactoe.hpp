@@ -4,15 +4,23 @@
 #include <SFML/Graphics.hpp>
 #include <array>
 #include <string>
+#include <iostream>
 
 enum class Mark { empty, cross, ring };
 enum class State { inProgress, cross, ring, draw };
+
+/** Overloads the << operator, so that enums could be printed to console. */
+std::ostream& operator<<(std::ostream &, const Mark);
+std::ostream & operator<<( std::ostream &, const State);
+class Board; // forward declaration
+std::ostream & operator<<(std::ostream &, const Board&);
+
 
 class Board
 {
 public:
     Board();
-    ~Board();
+    Board(const Board &);
 
     /** Sets all fields of Board to Mark::empty */
     void reset();
@@ -21,7 +29,7 @@ public:
     void setMark( Mark mark, std::size_t field);
 
     /** Returns a Board's field value */
-    Mark getMark( int position) const;
+    Mark getMark(const int position) const;
 
     /** Evaluates Board's state. */
     State evaluate() const;
@@ -40,7 +48,7 @@ public:
     void render();
 
     /** Updates the Canvas. */
-    void update(Board &);
+    void update(const Board &);
 
     /** Updates the Canvas on window's resize */
     void resize();
@@ -53,12 +61,65 @@ private:
     sf::RenderWindow * m_window;
 };
 
-// not yet implemented
-class Ki
+
+class Ai
 {
 public:
-    /** Returns the suggested Board's field number */
-    int getButtonNo();
+    Ai();
+    Ai(const Mark aiPlayer);
+    virtual ~Ai() {}
+
+    /** Returns a suggested Board's field number */
+    virtual int getSuggestedField(const Board & board, const Mark currPlayer) = 0;
+
+    Mark getAiPlayer() const { return m_aiPlayer; }
+    void setAiPlayer(const Mark p) { m_aiPlayer = p; }
+
+    int getPointsAtLost() const { return m_pointsAtLost;}
+    void setPointsAtLost(const int p) { m_pointsAtLost = p; }
+
+    int getPointsAtWin() const { return m_pointsAtWin; }
+    void setPointsAtWin(const int p) { m_pointsAtWin = p; }
+
+    int getPointsAtDraw() const { return m_pointsAtDraw; }
+    void setPointsAtDraw(const int p) { m_pointsAtDraw = p; }
+
+protected:
+    Mark m_aiPlayer;
+    int m_pointsAtLost; // should be negative
+    int m_pointsAtWin;  // should be positive
+    int m_pointsAtDraw;
+};
+
+class RandomAi : public Ai
+{
+public:
+    RandomAi();
+    RandomAi(const Mark aiPlayer);
+
+    /* Returns the best field for currPlayer by randomly detection */
+    int getSuggestedField(const Board &, const Mark currPlayer);
+
+    int getRandomRounds() const { return m_randomRounds; }
+    void setRandomRounds(const int r) { m_randomRounds = r; }
+
+private:
+    /** Plays randomly an empty field. */
+    void playRandomField(Board &, Mark currPlayer);
+
+    int m_randomRounds;
+};
+
+class MinimaxAi : public Ai
+{
+public:
+    MinimaxAi();
+    MinimaxAi(const Mark aiPlayer);
+
+    int getSuggestedField(const Board &, const Mark currPlayer);
+
+private:
+    int minimax(const Board &, const Mark currPlayer);
 };
 
 class Game
@@ -83,6 +144,9 @@ public:
     /** Checks if the game is finish. */
     bool isDone() const;
 
+    /** Resets the game */
+    void reset();
+
     /**
      * Checks for intersection of mouse click position with
      * a TicTacToe draw field.
@@ -90,13 +154,21 @@ public:
      * @return The field from mouse position at mouse click.
      * If the mouse is not over a field, returns -1.
      */
-    int getButtonNo(int posX, int posY) const;
+    int getButtonNo(const int posX, const int posY) const;
 
     /** Returns which player is currently on move. */
     Mark getCurrPlayer() const;
 
     /** Toggles the current player. */
     void toggleCurrPlayer();
+
+    /** Sets one player to this */
+    void setRandomAI();
+    void setMinimaxAI();
+    void setNoAI();
+
+    /** Here you could set one player at A.I. */
+    void setAIPlayer(const Mark aiPlayer);
 
 private:
 
@@ -111,8 +183,8 @@ private:
     State m_state; // State of Game
     int m_currButtonNo; //
     bool m_done;
-    Mark m_kiPlayer;
-    Ki * m_ki;
+    Mark m_aiPlayer;
+    Ai * m_ai;
 
 };
 
