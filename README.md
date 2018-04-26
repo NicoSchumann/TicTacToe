@@ -19,13 +19,13 @@ For each empty field of the board:
         Sum the evaluation to the fields score.
 Return the highest valuated field number.
 
+The implementation of the Minimax algorithm is also finished now.
+
 How to compile:
 run 'make' at the base directory.
 
 
 deutsch:
-==
-
 Ein einfaches TicTacToe-Spiel mit KI-Spieler mit Hilfe des SFML-Frameworks.
 
 Bei diesem Spiel will ich zwe verschiedene KI-implementierungen testen.
@@ -44,6 +44,8 @@ Für jedes freie Feld auf dem Bord:
         Werte den Bordzustand aus und bewerte das ursprüngliche Feld.
         Summiere den Wert zu den Bewertungspunkten des Feldes.
 Gib das am höchsten bewertete Feld zurück.
+
+Jetzt funktioniert auch die Implementation des Minimax-Algorithmus.
 
 Kompilieren:
 Einfach 'make' im obersten Verzeichnis des Repositorys aufrufen.
