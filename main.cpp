@@ -1,5 +1,4 @@
-#include <SFML/Graphics.hpp>
-#include "Tictactoe.hpp"
+#include "GUI.hpp"
 
 //
 //  Reset the board with right mouse click!
