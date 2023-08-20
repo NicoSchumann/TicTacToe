@@ -1,4 +1,5 @@
 #include "Ai.hpp"
+#include "Board.hpp"
 #include <ctime>
 #include <climits>
 
