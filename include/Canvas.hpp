@@ -4,6 +4,8 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 
+class Game;
+
 
 class Board; // forward declaration
 
@@ -13,8 +15,13 @@ public:
     Canvas();
     ~Canvas();
 
+    /** :-) */
+    void run();
+
     /** Draws all stuff. */
     void render();
+    
+   void handleInput();
 
     /** Updates the Canvas. */
     void update(const Board &);
@@ -29,6 +36,8 @@ private:
     /** Updates the Canvas on window's resize */
     void resize();
 
+    void initialize();
+
     /**
      * Checks for intersection of mouse click position with
      * a TicTacToe draw field.
@@ -39,8 +48,7 @@ private:
     int getBoardPosNo(const int posX, const int posY) const;
 
 
-    void handleInput();
-
+ 
     Game * m_game;
     std::shared_ptr<sf::RenderWindow> m_window;
     std::array<sf::RectangleShape,4> m_bars;

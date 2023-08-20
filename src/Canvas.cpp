@@ -5,7 +5,6 @@
 #include <memory>
 #include "Game.hpp"
 
-
 Canvas::Canvas()
 {
     m_window = std::make_unique<sf::RenderWindow>(sf::VideoMode(96,96), "Tictactoe");
@@ -20,12 +19,15 @@ Canvas::Canvas()
         sprite = sf::Sprite(m_texture, sf::Rect<int>(64,0,32,32));
         sprite.setOrigin(16,16);
     }
-    resize();
+    this->initialize();
 }
+
+Canvas::~Canvas()
+{}
 
 
 void
-Canvas::resize()
+Canvas::initialize()
 {
     sf::Vector2u wSize = m_window->getSize();
 
@@ -151,32 +153,45 @@ Canvas::setGameHandle(Game * game)
 {
     m_game = game;
 }
+
+void
+Canvas::run()
+{
+    this->handleInput();
+}
+
 void
 Canvas::handleInput()
 {
     sf::Event event;
-    m_window->waitEvent(event);
+    while (true)
     {
-        if (event.type == sf::Event::Closed)
+        m_window->waitEvent(event);
         {
-            m_done = true;
-        }
-        else if (event.type == sf::Event::Resized)
-        {
-            resize();
-            // m_canvas.resize();
-        }
-        else if (event.type == sf::Event::MouseButtonPressed)
-        {
-            if (event.mouseButton.button == sf::Mouse::Right)
+            if (event.type == sf::Event::Closed)
             {
-                reset();
-                std::cerr << "Game::reset()"; // debug
+                m_game->setDone();
+                m_window->close();
+                break;
             }
-            else if (m_state == State::inProgress
-               && event.mouseButton.button == sf::Mouse::Left
-            ) {
-                m_boardPosNo = getButtonNo(event.mouseButton.x, event.mouseButton.y);
+            else if (event.type == sf::Event::Resized)
+            {
+                this->resize();
+            }
+            else if (event.type == sf::Event::MouseButtonPressed)
+            {
+                if (event.mouseButton.button == sf::Mouse::Right)
+                {
+                    m_game->reset();
+                    std::cerr << "Game::reset()"; // debug
+                }
+                else if (m_game->getState() == State::inProgress 
+                && event.mouseButton.button == sf::Mouse::Left)
+                {
+                    int boardPosNo = getBoardPosNo(event.mouseButton.x, event.mouseButton.y);
+                    m_game->receive(boardPosNo);
+
+                }
             }
         }
     }

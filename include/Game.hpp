@@ -16,6 +16,7 @@ enum class State;
 class Game
 {
 public:
+
     Game();
     ~Game();
 
@@ -24,6 +25,16 @@ public:
 
     /** Set puit. */
     void setDone();
+    
+    State getState() const;
+
+    /** Resets the game */
+    void reset();
+
+    void receive(int);
+    
+   /** Waits for user input. */
+    void handleInput();
 
 private:
 
@@ -38,9 +49,7 @@ private:
    /** Let's choosing the player. Not yet implemented. */
     void intro();
 
-    /** Waits for user input. */
-    void handleInput();
-
+ 
     /** Updates the game state. */
     void update();
 
@@ -50,8 +59,6 @@ private:
     /** Checks if the game is finish. */
     bool isDone() const;
 
-    /** Resets the game */
-    void reset();
 
     
     /** Returns which player is currently on move. */

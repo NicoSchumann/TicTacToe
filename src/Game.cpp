@@ -30,6 +30,7 @@ void
 Game::handleInput()
 {
     m_canvas->handleInput();
+}
 /*
     // checks if AI is at draw and set AI's suggestion
     if (m_state == State::inProgress
@@ -162,9 +163,21 @@ Game::setAIPlayer(const Mark aiPlayer)
     m_aiPlayer = aiPlayer;
 }
 
+void
+Game::receive( int msg )
+{
+    std::cerr << msg;
+}
+
 void 
 Game::bye() {
     std::cout << "bye..\n";
+}
+
+State 
+Game::getState() const
+{
+    return m_state;
 }
 void
 Game::run()
@@ -177,9 +190,7 @@ Game::run()
 
     while(!isDone())
     {
-        m_canvas->render();
-        m_canvas->handleInput();
-        update();
+        m_canvas->run();
     }
     bye();
 }
