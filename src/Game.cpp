@@ -3,41 +3,46 @@
 #include "Board.hpp"
 #include <memory>
     
-Game::Game(sf::RenderWindow * window)
-: m_window(window)
-, m_canvas(window)
-, m_currPlayer(Mark::cross)
+Game::Game()
+: m_currPlayer(Mark::cross)
 , m_state(State::inProgress)
-, m_currButtonNo(-1)
+, m_boardPosNo(-1)
 , m_done(false)
 , m_aiPlayer(Mark::ring)
 {
+    m_canvas = std::make_unique<Canvas>();
+    m_canvas->setGameHandle(this);
+ 
     m_ai = std::make_unique<MinimaxAi>(m_aiPlayer);
-    resize();
+
 }
-Game::Game()
-: Game(new sf::RenderWindow(sf::VideoMode(300,300),"TicTacToe"))
-{}
+
 Game::~Game()
-{
-    delete m_window;
+{}
+
+void
+Game::setDone() 
+{ 
+    m_done = true; 
 }
 
 void
 Game::handleInput()
 {
+    m_canvas->handleInput();
+/*
     // checks if AI is at draw and set AI's suggestion
     if (m_state == State::inProgress
             && m_currPlayer == m_aiPlayer
             && m_ai != nullptr
     )
     {
-        m_currButtonNo = m_ai->getSuggestedField(m_board, m_currPlayer);
+        m_boardPosNo = m_ai->getSuggestedField(m_board, m_currPlayer);
         return;
     }
 
     sf::Event event;
-    m_window->waitEvent(event);
+    m_canvas->waitEvent(event);
     {
         if (event.type == sf::Event::Closed)
         {
@@ -58,40 +63,13 @@ Game::handleInput()
             else if (m_state == State::inProgress
                && event.mouseButton.button == sf::Mouse::Left
             ) {
-                m_currButtonNo = getButtonNo(event.mouseButton.x, event.mouseButton.y);
+                m_boardPosNo = getButtonNo(event.mouseButton.x, event.mouseButton.y);
             }
         }
     }
 }
-void
-Game::resize()
-{
-    sf::Vector2<unsigned int> wSize = m_window->getSize();
-    int bWidth = wSize.x/3;
-    int bHeight = wSize.y/3;
+*/
 
-    m_button[0] = sf::Rect<int>(       0,         0, bWidth, bHeight);
-    m_button[1] = sf::Rect<int>(  bWidth,         0, bWidth, bHeight);
-    m_button[2] = sf::Rect<int>(2*bWidth,         0, bWidth, bHeight);
-    m_button[3] = sf::Rect<int>(       0,   bHeight, bWidth, bHeight);
-    m_button[4] = sf::Rect<int>(  bWidth,   bHeight, bWidth, bHeight);
-    m_button[5] = sf::Rect<int>(2*bWidth,   bHeight, bWidth, bHeight);
-    m_button[6] = sf::Rect<int>(       0, 2*bHeight, bWidth, bHeight);
-    m_button[7] = sf::Rect<int>(  bWidth, 2*bHeight, bWidth, bHeight);
-    m_button[8] = sf::Rect<int>(2*bWidth, 2*bHeight, bWidth, bHeight);
-}
-int
-Game::getButtonNo(const int x, const int y) const
-{
-    for(std::size_t i = 0; i < m_button.size(); ++i)
-    {
-        if (m_button[i].contains(x,y))
-        {
-            return i;
-        }
-    }
-    return -1; // if something goes wrong
-}
 Mark
 Game::getCurrPlayer() const
 {
@@ -107,10 +85,10 @@ Game::update()
 {
     if (m_done)
     {
-        m_window->close();
+        m_canvas->close();
         return;
     }
-    if (m_currButtonNo == -1)
+    if (m_boardPosNo == -1)
     {
         return;
     }
@@ -118,7 +96,7 @@ Game::update()
     {
         return;
     }
-    if (m_board.getMark(m_currButtonNo) != Mark::empty)
+    if (m_board.getMark(m_boardPosNo) != Mark::empty)
     {
         std::cerr << "Game::update: m_board(m_currButtonNo) is not empty!\n";
         return;
@@ -127,17 +105,17 @@ Game::update()
 
     if (m_currPlayer == Mark::cross)
     {
-        m_board.setMark(Mark::cross, m_currButtonNo);
+        m_board.setMark(Mark::cross, m_boardPosNo);
     }
     else if (m_currPlayer == Mark::ring)
     {
-        m_board.setMark(Mark::ring, m_currButtonNo);
+        m_board.setMark(Mark::ring, m_boardPosNo);
     }
 
     toggleCurrPlayer();
 
-    m_currButtonNo = -1;
-    m_canvas.update(m_board);
+    m_boardPosNo = -1;
+    m_canvas->update(m_board);
     // std::cerr << m_board << '\n'; // debug
     m_state = m_board.evaluate();
 
@@ -152,16 +130,8 @@ void
 Game::reset()
 {
     m_board.reset();
-    m_canvas.update(m_board);
-    render();
-}
-
-void
-Game::render()
-{
-    if (m_done) { return; }
-
-    m_canvas.render();
+    m_canvas->update(m_board);
+    m_canvas->render();
 }
 
 void
@@ -207,8 +177,8 @@ Game::run()
 
     while(!isDone())
     {
-        render();
-        handleInput();
+        m_canvas->render();
+        m_canvas->handleInput();
         update();
     }
     bye();
