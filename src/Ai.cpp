@@ -2,8 +2,9 @@
 #include "Board.hpp"
 #include <ctime>
 #include <climits>
+#include <memory>
 
-/*------------- class Ai --------------*/
+/*------------- base class Ai --------------*/
 
 Ai::Ai(Mark aiPlayer)
 : m_aiPlayer(aiPlayer)
@@ -99,7 +100,7 @@ RandomAi::getSuggestedField(const Board & board, const Mark currPlayer)
             continue;
         }
 
-        Board * bo = new Board(board);
+        std::unique_ptr<Board> bo = std::make_unique<Board>(board);
         bo->setMark(currPlayer, i);
 
         // If playing that field results into
@@ -117,7 +118,7 @@ RandomAi::getSuggestedField(const Board & board, const Mark currPlayer)
             // toggle player
             Mark cp = (currPlayer == Mark::cross ? Mark::ring : Mark::cross);
             // clone the board
-            Board * b = new Board(*bo);
+            std::unique_ptr<Board> b = std::make_unique<Board>(*bo);
 
             State state = State::inProgress;
 
@@ -127,8 +128,6 @@ RandomAi::getSuggestedField(const Board & board, const Mark currPlayer)
                 cp = (cp == Mark::cross ? Mark::ring : Mark::cross);
                 state = b->evaluate();
             } while (state == State::inProgress);
-
-            delete b; // here not longer needed
 
             // evaluate the state of the randomly played board:
             if (state == State::draw)
@@ -145,8 +144,6 @@ RandomAi::getSuggestedField(const Board & board, const Mark currPlayer)
                 fieldVals[i] += m_pointsAtLost;
             }
         }
-        // delete the board of the i-th played field
-        delete bo;
     }
 
     // evaluate the earned points
@@ -209,10 +206,9 @@ MinimaxAi::getSuggestedField(const Board & board, const Mark currPlayer)
         {
             continue;
         }
-        Board * b = new Board(board);
+        std::unique_ptr<Board> b = std::make_unique<Board>(board);
         b->setMark(currPlayer, i);
         int val = minimax(*b, changedPlayer );
-        delete b;
 
         // Evaluates the the suggested field of the board.
         if (currPlayer == Mark::cross && val > fieldVal)
@@ -257,12 +253,10 @@ MinimaxAi::minimax(const Board & board, const Mark currPlayer)
             continue;
         }
 
-        Board * b = new Board(board);
+        std::unique_ptr<Board> b = std::make_unique<Board>(board);
         b->setMark(currPlayer,i);
 
         int val = minimax(*b,changedPlayer);
-
-        delete b;
 
         // Mark::cross maximizes
         if (currPlayer == Mark::cross && val > bestVal)
