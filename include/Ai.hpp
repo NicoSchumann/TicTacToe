@@ -11,7 +11,10 @@ public:
     Ai(const Mark aiPlayer);
     virtual ~Ai() {}
 
-    /** Returns a suggested Board's field number */
+    /** Returns the best playable field number.
+     * @returns -1 if the board couln't  evaluated.
+     * Field number range is from 0 to 8.
+     */
     virtual int getSuggestedField(const Board & board, const Mark currPlayer) = 0;
 
     Mark getAiPlayer() const { return m_aiPlayer; }
@@ -27,7 +30,7 @@ public:
     void setPointsAtDraw(const int p) { m_pointsAtDraw = p; }
 
 protected:
-    Mark m_aiPlayer;
+    Mark m_aiPlayer;    // Mark::empty means no AI player
     int m_pointsAtLost; // should be negative
     int m_pointsAtWin;  // should be positive
     int m_pointsAtDraw;

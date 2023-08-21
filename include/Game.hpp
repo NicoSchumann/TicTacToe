@@ -4,80 +4,56 @@
 #include <SFML/Graphics.hpp>
 #include "Board.hpp"
 #include "Canvas.hpp"
-#include <memory>
-
 
 // foorward declarations
 class Ai;
 enum class Mark;
 enum class State;
 
+enum class AIState
+{
+    none,
+    playerA,
+    playerB,
+    both
+};
 
 class Game
 {
 public:
-
     Game();
     ~Game();
 
-    /** This method should invoked by main(). */
+    /** Invoke this to run the game. */
     void run();
-
-    /** Set puit. */
-    void setDone();
-    
-    State getState() const;
 
     /** Resets the game */
     void reset();
 
-    void receive(int);
-    
-   /** Waits for user input. */
-    void handleInput();
+    /** For receiving a board field number (0 - 8) */
+    void receive(int boardFieldNo);
 
 private:
-
-   /** Sets one player to this */
+    /** Sets the the used AI. */
     void setRandomAI();
     void setMinimaxAI();
     void setNoAI();
 
-    /** Here you could set one player at A.I. */
-    void setAIPlayer(const Mark aiPlayer);
+    /** Here you can set none, one or both players to AI. */
+    void setAIState(AIState);
 
-   /** Let's choosing the player. Not yet implemented. */
-    void intro();
-
- 
-    /** Updates the game state. */
-    void update();
-
-    /** Renders the canvas. */
-    void render();
-
-    /** Checks if the game is finish. */
-    bool isDone() const;
-
-
-    
-    /** Returns which player is currently on move. */
-    Mark getCurrPlayer() const;
+    /** Let the AI make its turn. */
+    void processAI();
 
     /** Toggles the current player. */
     void toggleCurrPlayer();
 
-    void bye();
-
     std::unique_ptr<Canvas> m_canvas;
     Board m_board;
-    Mark m_currPlayer;
-    State m_state; // State of Game
-    int m_boardPosNo; // field-idx (0-8)
-    bool m_done;
-    Mark m_aiPlayer;
+    Mark m_currPlayer; // Flags the current player
+    State m_state;    // State of Game
     std::unique_ptr<Ai> m_ai;
-
+    AIState m_aiState; // Flags, wich player is controlled by AI
 };
 
 #endif // GAME_GUARD_HPP

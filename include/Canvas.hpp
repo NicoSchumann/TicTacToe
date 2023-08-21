@@ -4,10 +4,11 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 
+
 class Game;
+class Board; // forward declarations
+enum class Mark;
 
-
-class Board; // forward declaration
 
 class Canvas
 {
@@ -15,13 +16,13 @@ public:
     Canvas();
     ~Canvas();
 
-    /** :-) */
-    void run();
+    /** Others could send e message th this class object with this method
+     * This should be used for upgrade the sprite objects in the board array.
+     */
+    void receive(Mark mark, int boardField);
 
-    /** Draws all stuff. */
-    void render();
-    
-   void handleInput();
+  /** :-) */
+    void run();
 
     /** Updates the Canvas. */
     void update(const Board &);
@@ -36,6 +37,9 @@ private:
     /** Updates the Canvas on window's resize */
     void resize();
 
+/** Draws all stuff. */
+    void render();
+    
     void initialize();
 
     /**
@@ -47,6 +51,8 @@ private:
      */
     int getBoardPosNo(const int posX, const int posY) const;
 
+    /** Event poocessing, main loop. */
+    void handleInput();
 
  
     Game * m_game;
