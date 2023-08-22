@@ -14,8 +14,8 @@ constexpr unsigned int BUTTON_HEIGHT = 30;
 Canvas::Canvas()
 {
     m_window = std::make_unique<sf::RenderWindow>(sf::VideoMode((BOARD_WIDTH) + (BUTTON_WIDTH), (BOARD_HEIGHT)), "Reset by R-click.");
-    m_buttonToggleAI = new Button<Canvas>();
-    m_buttonToggleAIState = new Button<Canvas>();
+    m_buttonToggleAI = std::make_unique<Button<Canvas>>();
+    m_buttonToggleAIState = std::make_unique<Button<Canvas>>();
 
     if (!m_texture.loadFromFile("images/64x32_tictactoe.png"))
     {
@@ -27,8 +27,6 @@ Canvas::Canvas()
 
 Canvas::~Canvas()
 {
-    delete m_buttonToggleAI;
-    delete m_buttonToggleAIState;
 }
 
 
@@ -117,12 +115,6 @@ void Canvas::initialize()
     m_buttonToggleAIState->getRect().setOutlineThickness(-5.f);
     m_buttonToggleAIState->setCallback(this, &Canvas::toggleAIState);
 
-    sf::RectangleShape r = m_buttonToggleAI->getRect();
-    sf::Vector2f o = r.getOrigin();
-    sf::Vector2f pos = r.getPosition();
-    sf::Vector2f sz = r.getSize();
-    std::cerr <<o.x<<','<<o.y<<'|'<<pos.x<<','<<pos.y<<'|'<<sz.x<<','<<sz.y<<'\n';
-
 }
 
 void Canvas::render()
@@ -201,8 +193,12 @@ void Canvas::resize()
     m_fields[7] = sf::Rect<int>(bWidth, 2 * bHeight, bWidth, bHeight);
     m_fields[8] = sf::Rect<int>(2 * bWidth, 2 * bHeight, bWidth, bHeight);
 
-    m_buttonToggleAI->getRect().setPosition(sf::Vector2f(static_cast<float>(winSize.x) - static_cast<float>(BUTTON_WIDTH), 0.f));
-    m_buttonToggleAIState->getRect().setPosition(sf::Vector2f(static_cast<float>(winSize.x) - static_cast<float>(BUTTON_WIDTH), static_cast<float>(BUTTON_HEIGHT)));
+    m_buttonToggleAI->getRect().setPosition(
+        sf::Vector2f(static_cast<float>(winSize.x) - static_cast<float>(BUTTON_WIDTH),
+         0.f));
+    m_buttonToggleAIState->getRect().setPosition(
+        sf::Vector2f(static_cast<float>(winSize.x) - static_cast<float>(BUTTON_WIDTH),
+         static_cast<float>(BUTTON_HEIGHT)));
 }
 
 void Canvas::setGameHandle(Game *game)

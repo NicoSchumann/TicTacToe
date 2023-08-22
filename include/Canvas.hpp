@@ -65,8 +65,8 @@ private:
     sf::Texture m_texture;
     std::array<sf::Sprite, 9> m_sprites;
     std::array<sf::Rect<int>, 9> m_fields;
-    Button<Canvas>  *m_buttonToggleAI;  // Toggles between different AI.
-    Button<Canvas> *m_buttonToggleAIState; // Toggles between which players are controlled by AI.
+    std::unique_ptr<Button<Canvas>> m_buttonToggleAI;  // Toggles between different AI.
+    std::unique_ptr<Button<Canvas>> m_buttonToggleAIState; // Toggles between which players are controlled by AI.
 };
 
 #endif // CANVAS_GUARD_HPP

@@ -23,7 +23,7 @@ class Button : public Callback<T>
 {
 public:
     /** If the position is inside the area */
-    bool intersect(float posX, float posY);
+    bool intersect(float posX, float posY) const;
     sf::RectangleShape &getRect();
 
 private:
@@ -54,7 +54,7 @@ Button<T>::getRect()
 }
 
 template <typename T>
-bool Button<T>::intersect(float x, float y)
+bool Button<T>::intersect(float x, float y) const
 {
     return x >= m_shape.getPosition().x &&
            y >= m_shape.getPosition().y &&
