@@ -6,14 +6,14 @@
 #include "Game.hpp"
 #include "Button.hpp"
 
-#define BOARD_WIDTH 300
-#define BOARD_HEIGHT 300
-#define BUTTON_WIDTH 100  // At time not used.
-#define BUTTON_HEIGHT 30
+constexpr unsigned int BOARD_WIDTH = 300;
+constexpr unsigned int BOARD_HEIGHT = 300;
+constexpr unsigned int BUTTON_WIDTH = 100;
+constexpr unsigned int BUTTON_HEIGHT = 30;
 
 Canvas::Canvas()
 {
-    m_window = std::make_unique<sf::RenderWindow>(sf::VideoMode(BOARD_WIDTH + BUTTON_WIDTH, BOARD_HEIGHT), "Reset by R-click.");
+    m_window = std::make_unique<sf::RenderWindow>(sf::VideoMode((BOARD_WIDTH) + (BUTTON_WIDTH), (BOARD_HEIGHT)), "Reset by R-click.");
     m_buttonToggleAI = new Button<Canvas>();
     m_buttonToggleAIState = new Button<Canvas>();
 
@@ -21,11 +21,6 @@ Canvas::Canvas()
     {
         std::cerr << "Texture file couldn't loaded!";
         std::exit(EXIT_FAILURE);
-    }
-    for (auto &sprite : m_sprites)
-    {
-        sprite = sf::Sprite(m_texture, sf::Rect<int>(64, 0, 32, 32));
-        sprite.setOrigin(16, 16);
     }
     this->initialize();
 }
@@ -78,7 +73,14 @@ void Canvas::initialize()
             }
         }
     }
-    // Adjust the marks:
+
+       for (auto &sprite : m_sprites)
+    {
+        sprite = sf::Sprite(m_texture, sf::Rect<int>(64, 0, 32, 32));
+        sprite.setOrigin(16, 16); // center
+    }
+ 
+    // Adjust the marks. Position is at center of sprite objects.
     m_sprites[0].setPosition(boardSize.x / 6.0f * 1, boardSize.y / 6.0f * 1);
     m_sprites[1].setPosition(boardSize.x / 6.0f * 3, boardSize.y / 6.0f * 1);
     m_sprites[2].setPosition(boardSize.x / 6.0f * 5, boardSize.y / 6.0f * 1);
@@ -89,40 +91,38 @@ void Canvas::initialize()
     m_sprites[7].setPosition(boardSize.x / 6.0f * 3, boardSize.y / 6.0f * 5);
     m_sprites[8].setPosition(boardSize.x / 6.0f * 5, boardSize.y / 6.0f * 5);
     
+    wSize = m_window->getSize();
 
-    // Make  m_buttonToggleAI:
-    sf::Vector2f buttonPosition = m_buttonToggleAI->getRect().getPosition();
-    sf::Vector2f buttonSize = m_buttonToggleAI->getRect().getSize();
+    // boardSize is board's size
+    boardSize.x = wSize.x - BUTTON_WIDTH;
+    boardSize.y = wSize.y;
 
-    buttonPosition.x = boardSize.x;
-    buttonPosition.y = 0.f;
 
-    buttonSize.x = wSize.x - boardSize.x;
-    buttonSize.y = BUTTON_HEIGHT;
-
-    m_buttonToggleAI->getRect().setPosition(buttonPosition);
+ 
+    sf::Vector2f buttonSize = sf::Vector2f(static_cast<float>(wSize.x) - boardSize.x, static_cast<float>(BUTTON_HEIGHT));
+ 
+    m_buttonToggleAI->getRect().setOrigin(sf::Vector2f(0.f, 0.f));
     m_buttonToggleAI->getRect().setSize(buttonSize);
-
+    m_buttonToggleAI->getRect().setPosition(sf::Vector2f(boardSize.x, 0.f));
     m_buttonToggleAI->getRect().setFillColor(sf::Color::Blue);
     m_buttonToggleAI->getRect().setOutlineColor(sf::Color::Red);
     m_buttonToggleAI->getRect().setOutlineThickness(-5.f);
+    m_buttonToggleAI->setCallback(this, &Canvas::toggleAI);
 
-    //m_buttonToggleAI.setCallback(toggleAI);
-
-
-    // Make m_buttonToggleAIState:
-    buttonPosition = m_buttonToggleAI->getRect().getPosition();
-    buttonPosition.x = boardSize.x;
-    buttonPosition.y = m_buttonToggleAI->getRect().getSize().y;
-
-    m_buttonToggleAIState->getRect().setPosition(buttonPosition);
+    m_buttonToggleAIState->getRect().setOrigin(sf::Vector2f(0.f, 0.f));
     m_buttonToggleAIState->getRect().setSize(buttonSize);
-
+    m_buttonToggleAIState->getRect().setPosition(sf::Vector2f(boardSize.x, static_cast<float>(BUTTON_HEIGHT)));
     m_buttonToggleAIState->getRect().setFillColor(sf::Color::Blue);
     m_buttonToggleAIState->getRect().setOutlineColor(sf::Color::Red);
     m_buttonToggleAIState->getRect().setOutlineThickness(-5.f);
-
     m_buttonToggleAIState->setCallback(this, &Canvas::toggleAIState);
+
+    sf::RectangleShape r = m_buttonToggleAI->getRect();
+    sf::Vector2f o = r.getOrigin();
+    sf::Vector2f pos = r.getPosition();
+    sf::Vector2f sz = r.getSize();
+    std::cerr <<o.x<<','<<o.y<<'|'<<pos.x<<','<<pos.y<<'|'<<sz.x<<','<<sz.y<<'\n';
+
 }
 
 void Canvas::render()
@@ -137,6 +137,13 @@ void Canvas::render()
     {
         m_window->draw(sprite);
     }
+
+    sf::RectangleShape r = m_buttonToggleAI->getRect();
+    sf::Vector2f o = r.getOrigin();
+    sf::Vector2f pos = r.getPosition();
+    sf::Vector2f sz = r.getSize();
+    std::cerr <<o.x<<','<<o.y<<'|'<<pos.x<<','<<pos.y<<'|'<<sz.x<<','<<sz.y<<'\n';
+
     m_window->draw(m_buttonToggleAI->getRect());
     m_window->draw(m_buttonToggleAIState->getRect());
     m_window->display();
@@ -180,9 +187,9 @@ int Canvas::getBoardPosNo(const int x, const int y) const
 
 void Canvas::resize()
 {
-    sf::Vector2u boardSize = m_window->getSize();
-    int bWidth = boardSize.x / 3;
-    int bHeight = boardSize.y / 3;
+    sf::Vector2u winSize = m_window->getSize();
+    float bWidth = (winSize.x - BUTTON_WIDTH) / 3;
+    float bHeight = winSize.y / 3;
 
     m_fields[0] = sf::Rect<int>(0, 0, bWidth, bHeight);
     m_fields[1] = sf::Rect<int>(bWidth, 0, bWidth, bHeight);
@@ -193,6 +200,9 @@ void Canvas::resize()
     m_fields[6] = sf::Rect<int>(0, 2 * bHeight, bWidth, bHeight);
     m_fields[7] = sf::Rect<int>(bWidth, 2 * bHeight, bWidth, bHeight);
     m_fields[8] = sf::Rect<int>(2 * bWidth, 2 * bHeight, bWidth, bHeight);
+
+    m_buttonToggleAI->getRect().setPosition(sf::Vector2f(static_cast<float>(winSize.x) - static_cast<float>(BUTTON_WIDTH), 0.f));
+    m_buttonToggleAIState->getRect().setPosition(sf::Vector2f(static_cast<float>(winSize.x) - static_cast<float>(BUTTON_WIDTH), static_cast<float>(BUTTON_HEIGHT)));
 }
 
 void Canvas::setGameHandle(Game *game)
