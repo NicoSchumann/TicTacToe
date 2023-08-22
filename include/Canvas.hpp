@@ -3,12 +3,12 @@
 
 #include <SFML/Graphics.hpp>
 #include <memory>
+#include "Button.hpp"
 
-
+// forward declarations
 class Game;
-class Board; // forward declarations
+class Board;
 enum class Mark;
-
 
 class Canvas
 {
@@ -21,25 +21,24 @@ public:
      */
     void receive(Mark mark, int boardField);
 
-  /** :-) */
+    /** :-) */
     void run();
 
     /** Updates the Canvas. */
     void update(const Board &);
 
     void setGameHandle(Game *);
- 
+
     /** Closes the window */
     void close();
 
 private:
-
     /** Updates the Canvas on window's resize */
     void resize();
 
-/** Draws all stuff. */
+    /** Draws all stuff. */
     void render();
-    
+
     void initialize();
 
     /**
@@ -54,15 +53,20 @@ private:
     /** Event poocessing, main loop. */
     void handleInput();
 
- 
-    Game * m_game;
+    /** Toggles between supported player AI. */
+    void toggleAI();
+
+    /** Toggles between, which player is controlled by AI. */
+    void toggleAIState();
+
+    Game *m_game; // A handle.
     std::shared_ptr<sf::RenderWindow> m_window;
-    std::array<sf::RectangleShape,4> m_bars;
+    std::array<sf::RectangleShape, 4> m_bars;
     sf::Texture m_texture;
-    std::array<sf::Sprite,9> m_sprites;
-    std::array<sf::Rect<int>, 9> m_buttons;
-
+    std::array<sf::Sprite, 9> m_sprites;
+    std::array<sf::Rect<int>, 9> m_fields;
+    Button<Canvas>  *m_buttonToggleAI;  // Toggles between different AI.
+    Button<Canvas> *m_buttonToggleAIState; // Toggles between which players are controlled by AI.
 };
-
 
 #endif // CANVAS_GUARD_HPP

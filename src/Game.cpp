@@ -2,7 +2,6 @@
 #include "Ai.hpp"
 #include "Board.hpp"
 #include <memory>
-#include <future>
 
 Game::Game()
     : m_currPlayer(Mark::cross), m_state(State::inProgress), m_aiState(AIState::playerA)
@@ -89,9 +88,31 @@ void Game::setAIState(const AIState state)
     m_aiState = state;
 }
 
+void Game::toggleAI()
+{
+    if (m_aiMode == AIMode::none)
+        setMinimaxAI();
+    else if (m_aiMode == AIMode::minimax)
+        setRandomAI();
+    else
+        setNoAI();
+}
+
+void Game::toggleAIState()
+{
+    if (m_aiState == AIState::none)
+        m_aiState = AIState::playerA;
+    else if (m_aiState == AIState::playerA)
+        m_aiState = AIState::playerB;
+    else if (m_aiState == AIState::playerB)
+        m_aiState = AIState::both;
+    else if (m_aiState == AIState::both)
+        m_aiState = AIState::none;
+}
+
 void Game::processAI()
 {
-    int field = m_ai->getSuggestedField(m_board, m_currPlayer);   
+    int field = m_ai->getSuggestedField(m_board, m_currPlayer);
     if (field != -1)
     {
         m_board.setMark(m_currPlayer, field);
